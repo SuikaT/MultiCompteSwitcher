@@ -1,164 +1,109 @@
 ﻿SetTitleMatchMode, 2
+global processus:="Dofus.exe"
+global order:=true
+global chars:=["Kawori","Kawoha","Kawopa","Kawopi"]
 
-global Char1:="Kawibou"
-global Char2:="Kawypso"
-global Char3:="Kawapace"
-global Char4:="Kawopa"
-global Char5:="Kawoha"
-global Char6:="Kawortie"
-global Char7:="Kawoxine"
-global Char8:="Kawoya"
-global totalChar:=8
+global windows:= []
+global activeIndex:= 1
 
-loop
-{
-	Tab::switch()
-    XButton2::switch()
-	XButton1::switchBack()	
-    F1::activateCharAtPosition(1)
-	F2::activateCharAtPosition(2)
-	F3::activateCharAtPosition(3)
-	F4::activateCharAtPosition(4)
- 	F5::activateCharAtPosition(5)
-	F6::activateCharAtPosition(6)
-	F7::activateCharAtPosition(7)
-	F8::activateCharAtPosition(8)
+Tab::switch()
+F1::activateAtIndex(1)
+F2::activateAtIndex(2)
+F3::activateAtIndex(3)
+F4::activateAtIndex(4)
+F5::activateAtIndex(5)
+F6::activateAtIndex(6)
+F7::activateAtIndex(7)
+F8::activateAtIndex(8)
 
-	F12::ExitApp
-	
-	return	
+
+
+
+switch() {
+    global windows, activeIndex
+
+
+    InitWindows()
+   
+
+    index:= activeIndex + 1
+    if(!index || index > windows.MaxIndex()) {
+        index := 1
+    }
+
+    activateAtIndex(index)
 }
 
+activateAtIndex(index) {
+    global windows, activeIndex
 
+    InitWindows()
 
-switch(){
+    hwnd := windows[index].hwnd
+    WinActivate, ahk_class Shell_TrayWnd
+    WinActivate, ahk_id %hwnd%
 
-    if(!WinActive("Dofus"))
-	{
-	   return
-	}
-
-	i:=1
-	loop
-	{				
-		if(i > totalChar){
-			subswitch(0)
-			break
-		}
-		charToCheck:= Char%i%
-		IfWinActive,%charToCheck% 
-		{
-			subswitch(i)
-			break
-		}
-		
-
-		i++
-	}
-	
-	
-	return
+    if WinActive("ahk_id " hwnd) {
+        activeIndex := index
+    }
 }
 
-subswitch(i)
-{
-	loop
-	{	
-		i++ 
-	    if(i > totalChar){
-			subswitch(0)
-			break
-		}
-		
-		currentChar:= Char%i%
-		IfWinExist,%currentChar%
-		{
-			WinActivate,%currentChar%
-			break
-		}			   
-	}
-	
-	return
+InitWindows() {
+    global windows, activeIndex
+
+    windows := getDofusWindows()
+
+    if(order && windows.MaxIndex()) {
+        windows := orderWindows(windows)
+    }
 }
 
-switchBack(){
-    if(!WinActive("Dofus"))
-	{
-	   return
-	}
+orderWindows(wins) {
+    global chars
 
-	i:= totalChar
-	loop
-	{				
-		if(i <= 0){
-			subswitchBack(0)
-			break
-		}
-		charToCheck:= Char%i%
-		IfWinActive,%charToCheck% 
-		{
-			subswitchBack(i)
-			break
-		}
-		
+    orderedWins := []
+    
+    i := 1
+    Loop, % chars.MaxIndex() { 
+        char := chars[i] 
+        winFound := findFirstWindowByTitle(wins, char)
+       
+        if(winFound) {
+            orderedWins.Push(winFound)
+        }
 
-		i--
-	}
-	
-	
-	return
+        i++
+    }
+
+    return orderedWins
 }
 
-subSwitchBack(i)
-{
-	loop
-	{	
-		i--
-	    if(i <= 0){
-			subswitchBack(totalChar)
-			break
-		}
-		
-		currentChar:= Char%i%
-		IfWinExist,%currentChar%
-		{
-			WinActivate,%currentChar%
-			break
-		}			   
-	}
+findFirstWindowByTitle(wins, searchText) {
+    for _, win in wins {
+        if (InStr(win.title, searchText)) {
+            return win
+        }
+    }
+
+    return ""
+}
+
+getDofusWindows() {
+    global processus
+
+    wins := []
+
+    WinGet, idList, List, ahk_exe %processus%
+    Loop, %idList%
+    {
+        hwnd := idList%A_Index%
+        WinGetTitle, title, ahk_id %hwnd%
+        wins.Push({ hwnd: hwnd, title: title })
+    }
 	
-	return
+    return wins
 }
 
-
-;;Activate the windows at the given position but the real position. For example, if char1, 2 and 4 are connected then the char4 is at 3rd position
-activateCharAtPosition(i)
-{  
-    if(!WinActive("Dofus"))
-	{
-	   return
-	}
-
-	actualPosition:=0 
-	index:=0
-	Loop
-	{
-		index++ 
-		if(index > totalChar){
-			subswitch(0)
-			break
-		}
-		currentChar:= Char%index%
-		ifWinExist,%currentChar%
-		{
-			actualPosition++
-			if(actualPosition = i){
-				WinActivate,%currentChar%
-				break
-			}
-
-		}
-	}
-	return
+Log(msg) {
+    MsgBox, %msg%
 }
-
